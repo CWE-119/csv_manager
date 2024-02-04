@@ -6,7 +6,7 @@ mod csv_writer;
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct Bill{
-    index:String,
+    // index:String,
     time:String,
     name: String,
     amount: i32
@@ -82,30 +82,25 @@ fn get_bill_amount() -> Option<i32> {
 mod menu {
     use crate::{get_input,get_bill_amount,Bill ,Bills,};
     use chrono::prelude::*;
-    use std::error::Error;
+    use std::{error::Error};
     use std::fs::File;
-    use csv::ReaderBuilder;
+    use csv::{ReaderBuilder, Writer};
 
-    pub fn count_rows() -> Result<usize, Box<dyn Error>>{
-        let csv_path = "E:/newStart/practice/billing_application/test.csv";
-        let file = File::open(csv_path)?;
+    // pub fn count_rows() -> Result<usize, Box<dyn Error>>{
+    //     let csv_path = "E:/newStart/practice/billing_application/test.csv";
+    //     let file = File::open(csv_path)?;
         
-        // Create a CSV reader with flexible settings
-        let mut csv_reader = ReaderBuilder::new().flexible(true).from_reader(file);
+    //     // Create a CSV reader with flexible settings
+    //     let mut csv_reader = ReaderBuilder::new().flexible(true).from_reader(file);
     
-        // Iterate through CSV records and count the number of rows
-        let mut row_count = 1;
-        for _ in csv_reader.records() {
-            row_count += 1;
-        }
+    //     // Iterate through CSV records and count the number of rows
+    //     let mut row_count = 1;
+    //     for _ in csv_reader.records() {
+    //         row_count -= 1;
+    //     }
     
-        // match row_count {
-        //     0 => println!("The CSV file is empty."),
-        //     count =>  count,
-        // }
-
-        Ok(row_count)
-    }
+    //     Ok(row_count)
+    // }
 
     pub fn time() -> String{
         let local: DateTime<Local> = Local::now();
@@ -123,9 +118,10 @@ mod menu {
             Some(amount) => amount,
             None => return
         };
-        let index = count_rows().unwrap().to_string();
+        // let index = count_rows().unwrap().to_string();
         let time = time();
-        let bill = Bill{index,time, name, amount};
+        // let bill = Bill{index,time, name, amount};
+        let bill = Bill{time, name, amount};
         bills.add(bill);
         println!("bill added");
     }
@@ -174,6 +170,39 @@ mod menu {
             println!("{:?}", bill)
         }
     }
+
+    pub fn sort_writer(bills : &Bills)-> Result<(), Box<dyn Error>> {
+        let mut bill:Vec<_> = bills.inner.iter().collect();
+        // for (key, value) in &bill{
+        //     println!("{:?}", value.name)
+        // }
+
+        // sort the array
+        // bill.sort_by_key(|&(_, ref info)| &info.index);
+
+        // create sorted vector of the hashmap
+        let sorted_map:Vec<_> = bill.into_iter().collect();
+
+        // csv path 
+        let csv_path = "E:/newStart/practice/billing_application/test.csv";
+
+        let file = File::create(csv_path)?;
+        
+        let mut writer = Writer::from_writer(file);
+
+        // writer.write_record(&["time", "name" , "amount"])?;
+
+        for (_key, values) in &sorted_map{
+            println!("{} {} {}",&values.time, &values.name, &values.amount);
+            writer.write_record(&[&values.time.to_string(),&values.name.to_string(),&values.amount.to_string()])?;
+        }
+
+        // flush the writer to ensure all the data is written to the file
+        writer.flush()?;
+
+        println!("CSV file is written successfully to {}", csv_path);
+        Ok(())
+    }
 }
 
 
@@ -181,7 +210,8 @@ enum MainMenu{
     AddBill, 
     ViewBill,
     RemoveBill,
-    UpdateBill
+    UpdateBill,
+    // SortWriter
 }
 
 impl MainMenu{
@@ -191,6 +221,7 @@ impl MainMenu{
             "2" => Some(MainMenu::RemoveBill),
             "3" => Some(MainMenu::ViewBill),
             "4" => Some(MainMenu::UpdateBill),
+            // "5" => Some(MainMenu::SortWriter),
             _ => None
         }
     }
@@ -202,6 +233,7 @@ impl MainMenu{
         println!("2. Remove Bill");
         println!("3. View Bill");
         println!("4. Update Bill");
+        println!("5. Sort and Write");
         println!("");
         println!("Enter Selection: ");
     }
@@ -213,6 +245,10 @@ fn main() {
     // create bill structure 
 
     let mut bills = Bills::new();
+    for i in bills.get_all(){
+        println!("{:?}",i)
+    }
+
     loop{
         // display the menu 
         MainMenu::show();
@@ -222,17 +258,20 @@ fn main() {
             Some(MainMenu::RemoveBill) => menu::remove_bill(&mut bills),
             Some(MainMenu::ViewBill) => menu::view_bills(&bills),
             Some(MainMenu::UpdateBill) => menu::update_bill(&mut bills),
+            // Some(MainMenu::SortWriter) => menu::sort_writer(&mut bills).unwrap(),
             None => return 
         }
+        menu::sort_writer(&mut bills).unwrap();
         // make a choice, based on input 
     }
 
 }
 
 // todo 
-// read line number from csv file , set it as the index number 
-// convert hash to vector to maintain order , sort by index 
-// push the vector into the csv file
+// better way to  set path of the csv file 
+// see how to update the file 
+// see how to use python with rust 
+// make a app 
 
 
 // start from 92 
